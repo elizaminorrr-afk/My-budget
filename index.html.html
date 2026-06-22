@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="My Budget" />
+  <title>Eliza's Budget</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
+
+    .header { background: #fff; border-bottom: 1px solid #f1f5f9; padding: 20px 16px 16px; position: sticky; top: 0; z-index: 10; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .eyebrow { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #94a3b8; margin-bottom: 2px; }
+    .title { font-size: 24px; font-weight: 700; color: #1e293b; }
+    .subtitle { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .subtitle strong { color: #475569; }
+    .saved-badge { font-size: 11px; color: #10b981; background: #ecfdf5; padding: 4px 8px; border-radius: 8px; font-weight: 600; opacity: 0; transition: opacity 0.3s; flex-shrink: 0; margin-top: 4px; }
+    .saved-badge.show { opacity: 1; }
+
+    .paycheck-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .paycheck-label { font-size: 13px; color: #64748b; }
+    .paycheck-input-wrap { display: flex; align-items: center; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; overflow: hidden; }
+    .paycheck-symbol { padding: 0 6px 0 8px; color: #94a3b8; font-size: 14px; }
+    .paycheck-input { width: 72px; padding: 6px 8px 6px 0; font-size: 14px; font-weight: 600; color: #1e293b; border: none; background: transparent; outline: none; }
+    .paycheck-monthly { font-size: 11px; color: #94a3b8; }
+
+    .toggle-wrap { padding: 12px 16px 8px; }
+    .toggle { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 12px; width: fit-content; }
+    .toggle-btn { padding: 6px 16px; border-radius: 9px; font-size: 13px; font-weight: 500; border: none; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+    .toggle-btn.active { background: #fff; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .content { padding: 0 16px 48px; display: flex; flex-direction: column; gap: 12px; max-width: 640px; margin: 0 auto; }
+
+    .banner { border-radius: 20px; padding: 20px; color: #fff; }
+    .banner.green { background: #10b981; }
+    .banner.amber { background: #f59e0b; }
+    .banner.red { background: #ef4444; }
+    .banner-label { font-size: 13px; opacity: 0.8; margin-bottom: 4px; }
+    .banner-amount { font-size: 44px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .banner-sub { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+    .banner-status { font-size: 12px; font-weight: 600; opacity: 0.9; margin-top: 8px; }
+
+    .paycheck-picker { background: #fff; border-radius: 20px; border: 1px solid #f1f5f9; padding: 16px; }
+    .section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #94a3b8; margin-bottom: 12px; }
+
+    .month-group { margin-bottom: 16px; }
+    .month-label { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+    .pc-dates { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pc-btn { padding: 6px 12px; border-radius: 10px; font-size: 13px; font-weight: 500; border: 1px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; }
+    .pc-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+    .pc-range { font-size: 11px; color: #94a3b8; margin-top: 8px; }
+
+    .card { background: #fff; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
+    .card-header { padding: 16px 16px 8px; display: flex; justify-content: space-between; align-items: center; }
+    .card-total { font-size: 14px; font-weight: 600; color: #475569; }
+    .card-tip { padding: 10px 16px; font-size: 11px; }
+    .card-tip.blue { background: #eff6ff; color: #2563eb; }
+    .card-tip.amber { background: #fffbeb; color: #d97706; }
+    .empty-note { padding: 12px 16px; font-size: 13px; color: #94a3b8; font-style: italic; }
+
+    .row { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f8fafc; }
+    .row:first-child { border-top: none; }
+    .row-left { display: flex; align-items: center; gap: 10px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot.rose { background: #fb7185; }
+    .dot.emerald { background: #34d399; }
+    .dot.violet { background: #a78bfa; }
+    .dot.blue { background: #60a5fa; }
+    .dot.amber { background: #fbbf24; }
+    .dot.orange { background: #fb923c; }
+    .row-name { font-size: 14px; color: #334155; }
+    .row-meta { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .row-meta span { font-weight: 500; }
+    .row-meta span.rose { color: #e11d48; }
+    .row-meta span.emerald { color: #059669; }
+    .row-meta span.violet { color: #7c3aed; }
+    .row-meta span.blue { color: #2563eb; }
+    .row-meta span.amber { color: #d97706; }
+    .row-meta span.orange { color: #ea580c; }
+    .row-amount { font-size: 14px; font-weight: 600; color: #1e293b; white-space: nowrap; }
+    .emoji { font-size: 18px; }
+    .row-note { font-size: 11px; color: #94a3b8; }
+    .row-new { font-size: 11px; color: #3b82f6; font-weight: 500; }
+
+    .input-wrap { display: flex; align-items: center; gap: 4px; }
+    .input-symbol { color: #cbd5e1; font-size: 14px; }
+    .amount-input { width: 64px; text-align: right; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px 8px; font-size: 14px; color: #1e293b; outline: none; font-family: inherit; }
+    .amount-input:focus { border-color: #93c5fd; }
+    .amount-input.amber:focus { border-color: #fcd34d; }
+
+    .breakdown-row { margin-bottom: 12px; }
+    .breakdown-row:last-child { margin-bottom: 0; }
+    .breakdown-labels { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .breakdown-label { color: #64748b; }
+    .breakdown-amount { font-weight: 600; color: #1e293b; }
+    .breakdown-amount.green { color: #10b981; }
+    .breakdown-amount.red { color: #ef4444; }
+    .bar-track { height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+    .bar-fill.slate { background: #94a3b8; }
+    .bar-fill.blue { background: #60a5fa; }
+    .bar-fill.amber { background: #fbbf24; }
+    .bar-fill.emerald { background: #34d399; }
+    .bar-fill.red { background: #f87171; }
+
+    .home-tip { background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: 20px; padding: 20px; color: #fff; }
+    .home-tip-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; margin-bottom: 8px; }
+    .home-tip-text { font-size: 13px; line-height: 1.6; opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="eyebrow">Eliza's</div>
+      <div class="title">Monthly Budget</div>
+      <div class="subtitle" id="nextPcLabel">Next paycheck · <strong>July 3</strong> · Biweekly</div>
+    </div>
+    <div class="saved-badge" id="savedBadge">✓ Saved</div>
+  </div>
+  <div class="paycheck-row">
+    <span class="paycheck-label">Take-home per paycheck:</span>
+    <div class="paycheck-input-wrap">
+      <span class="paycheck-symbol">$</span>
+      <input class="paycheck-input" type="number" id="paycheckInput" value="1600" />
+    </div>
+    <span class="paycheck-monthly" id="monthlyLabel">= $3,200.00/mo</span>
+  </div>
+</div>
+
+<div class="toggle-wrap">
+  <div class="toggle">
+    <button class="toggle-btn active" id="btnMonthly" onclick="setView('monthly')">Monthly</button>
+    <button class="toggle-btn" id="btnPaycheck" onclick="setView('paycheck')">By Paycheck</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="banner green" id="banner">
+    <div class="banner-label" id="bannerLabel">Monthly left after everything</div>
+    <div class="banner-amount" id="bannerAmount">$0.00</div>
+    <div class="banner-sub" id="bannerSub"></div>
+    <div class="banner-status" id="bannerStatus"></div>
+  </div>
+
+  <div class="paycheck-picker" id="paycheckPicker" style="display:none">
+    <div class="section-label">Select Paycheck</div>
+    <div id="pcMonthGroups"></div>
+    <div class="pc-range" id="pcRange"></div>
+  </div>
+
+  <div class="card" id="fixedCard">
+    <div class="card-header">
+      <div class="section-label" style="margin:0">Fixed Expenses</div>
+      <div class="card-total" id="fixedTotal"></div>
+    </div>
+    <div id="fixedRows"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="section-label" style="margin:0">Savings Accounts</div>
+      <div class="card-total" id="savingsTotal"></div>
+    </div>
+    <div id="savingsRows"></div>
+    <div class="card-tip blue" id="savingsTip"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="section-label" style="margin:0">Variable Expenses</div>
+      <div class="card-total" id="variableTotal"></div>
+    </div>
+    <div id="variableRows"></div>
+    <div class="card-tip amber">💡 Adjust freely — give yourself real breathing room here</div>
+  </div>
+
+  <div class="card" style="padding:16px">
+    <div class="section-label">Where Your Money Goes</div>
+    <div id="breakdownRows"></div>
+  </div>
+
+  <div class="home-tip">
+    <div class="home-tip-label">🏠 Home Fund</div>
+    <div class="home-tip-text" id="homeTipText"></div>
+  </div>
+
+</div>
+
+<script>
+// ── FIXED EXPENSES ──────────────────────────────────────────────
+// Each has a dayOfMonth (1-28) or frequency:'weekly'
+const FIXED_EXPENSES = [
+  { name: "2819 Church (tithing)",    amount: 20,     frequency: "weekly",  category: "Giving" },
+  { name: "Vizion Church (tithing)",  amount: 20,     frequency: "weekly",  category: "Giving" },
+  { name: "Club Pilates",             amount: 259.00, dayOfMonth: 1,        category: "Health" },
+  { name: "Crunch Fitness",           amount: 32.24,  dayOfMonth: 2,        category: "Health" },
+  { name: "Hulu",                     amount: 21.39,  dayOfMonth: 5,        category: "Subscriptions" },
+  { name: "Apple Storage",            amount: 9.99,   dayOfMonth: 12,       category: "Subscriptions" },
+  { name: "Roth IRA (Merrill Lynch)", amount: 200.00, dayOfMonth: 20,       category: "Savings" },
+];
+
+const SAVINGS_META = [
+  { name: "General Savings",   emoji: "🏦" },
+  { name: "No-Touch Savings",  emoji: "🔒" },
+  { name: "Dog Fund",          emoji: "🐾", note: "Covers vet, food & pet costs" },
+  { name: "Car Fund",          emoji: "🚗" },
+  { name: "Home Fund ✨",      emoji: "🏠", isNew: true },
+];
+
+const VARIABLE_META = [
+  { name: "Groceries",  category: "Essentials" },
+  { name: "Gas",        category: "Essentials" },
+  { name: "Eating Out", category: "Lifestyle" },
+];
+
+const CAT_DOT  = { Giving:"rose", Health:"emerald", Subscriptions:"violet", Savings:"blue", Essentials:"amber", Lifestyle:"orange" };
+const CAT_TEXT = { Giving:"rose", Health:"emerald", Subscriptions:"violet", Savings:"blue", Essentials:"amber", Lifestyle:"orange" };
+const TARGET = 400;
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+// ── STATE ───────────────────────────────────────────────────────
+let view = "monthly";
+let pcIndex = 0;
+let paycheckAmount = 1600;
+let savings  = { "General Savings":300, "No-Touch Savings":300, "Dog Fund":300, "Car Fund":300, "Home Fund ✨":300 };
+let variable = { "Groceries":200, "Gas":150, "Eating Out":120 };
+
+// ── PAY DATES: biweekly from Jul 3 2026 for 26 periods (1 year) ─
+function getPayDates() {
+  const dates = [];
+  let d = new Date(2026, 6, 3); // July 3 2026
+  for (let i = 0; i < 26; i++) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 14);
+  }
+  return dates;
+}
+const payDates = getPayDates();
+
+function fmt(n) { return '$' + Number(n).toFixed(2); }
+function fmtDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric' }); }
+function fmtDateLong(d) { return d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' }); }
+
+// ── WHICH EXPENSES FALL IN A PAY PERIOD ────────────────────────
+function getExpensesForPeriod(startDate) {
+  const start = new Date(startDate);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 13); // 14-day window inclusive
+
+  const result = [];
+
+  for (const exp of FIXED_EXPENSES) {
+    if (exp.frequency === 'weekly') {
+      // Count Sundays in the window
+      let count = 0;
+      let d = new Date(start);
+      while (d <= end) {
+        if (d.getDay() === 0) count++; // Sunday
+        d.setDate(d.getDate() + 1);
+      }
+      if (count > 0) {
+        result.push({
+          ...exp,
+          totalAmount: exp.amount * count,
+          due: count === 1 ? 'Weekly (1x)' : `Weekly (${count}x)`
+        });
+      }
+    } else {
+      // Monthly: check if dayOfMonth falls within window
+      // Need to check both the start month and potentially next month
+      let d = new Date(start);
+      while (d <= end) {
+        if (d.getDate() === exp.dayOfMonth) {
+          result.push({
+            ...exp,
+            totalAmount: exp.amount,
+            due: fmtDate(d)
+          });
+          break;
+        }
+        d.setDate(d.getDate() + 1);
+      }
+    }
+  }
+  return result;
+}
+
+// ── MONTHLY TOTALS (average across year) ──────────────────────
+function calcMonthlyTotals() {
+  // Fixed: annualize then divide by 12
+  let annualFixed = 0;
+  for (const exp of FIXED_EXPENSES) {
+    if (exp.frequency === 'weekly') {
+      annualFixed += exp.amount * 52;
+    } else {
+      annualFixed += exp.amount * 12;
+    }
+  }
+  const totalFixed = annualFixed / 12;
+  const totalSavings  = Object.values(savings).reduce((a,b) => a + Number(b), 0);
+  const totalVariable = Object.values(variable).reduce((a,b) => a + Number(b), 0);
+  const monthlyIncome = paycheckAmount * 2;
+  const totalOut = totalFixed + totalSavings + totalVariable;
+  const leftover = monthlyIncome - totalOut;
+  return { monthlyIncome, totalFixed, totalSavings, totalVariable, totalOut, leftover };
+}
+
+// ── PAYCHECK TOTALS ───────────────────────────────────────────
+function calcPaycheckTotals(startDate) {
+  const expenses = getExpensesForPeriod(startDate);
+  const pcFixed = expenses.reduce((s,e) => s + e.totalAmount, 0);
+  const pcSavings  = Object.values(savings).reduce((a,b) => a + Number(b) / 2, 0);
+  const pcVariable = Object.values(variable).reduce((a,b) => a + Number(b) / 2, 0);
+  const pcTotal = pcFixed + pcSavings + pcVariable;
+  const pcLeftover = paycheckAmount - pcTotal;
+  return { expenses, pcFixed, pcSavings, pcVariable, pcTotal, pcLeftover };
+}
+
+// ── STORAGE ───────────────────────────────────────────────────
+function load() {
+  try {
+    const pc = localStorage.getItem('budget_paycheck');
+    const sv = localStorage.getItem('budget_savings');
+    const va = localStorage.getItem('budget_variable');
+    if (pc) { paycheckAmount = Number(pc); document.getElementById('paycheckInput').value = pc; }
+    if (sv) savings  = JSON.parse(sv);
+    if (va) variable = JSON.parse(va);
+  } catch(e) {}
+}
+
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem('budget_paycheck', String(paycheckAmount));
+      localStorage.setItem('budget_savings',  JSON.stringify(savings));
+      localStorage.setItem('budget_variable', JSON.stringify(variable));
+      const badge = document.getElementById('savedBadge');
+      badge.classList.add('show');
+      setTimeout(() => badge.classList.remove('show'), 1500);
+    } catch(e) {}
+  }, 400);
+}
+
+// ── VIEW TOGGLE ───────────────────────────────────────────────
+function setView(v) {
+  view = v;
+  document.getElementById('btnMonthly').className  = 'toggle-btn' + (v==='monthly'  ? ' active' : '');
+  document.getElementById('btnPaycheck').className = 'toggle-btn' + (v==='paycheck' ? ' active' : '');
+  document.getElementById('paycheckPicker').style.display = v==='paycheck' ? 'block' : 'none';
+  render();
+}
+
+function setPcIndex(i) { pcIndex = i; render(); }
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const monthly = view === 'monthly';
+
+  document.getElementById('monthlyLabel').textContent = '= ' + fmt(paycheckAmount * 2) + '/mo';
+
+  if (monthly) renderMonthly();
+  else         renderPaycheck();
+
+  // Savings rows (same in both views)
+  const totalSav = Object.values(savings).reduce((a,b) => a + Number(b), 0);
+  document.getElementById('savingsTotal').textContent = monthly ? fmt(totalSav) : fmt(totalSav / 2);
+  document.getElementById('savingsRows').innerHTML = SAVINGS_META.map(s => {
+    const val = Number(savings[s.name] || 0);
+    return `<div class="row">
+      <div class="row-left">
+        <span class="emoji">${s.emoji}</span>
+        <div>
+          <div class="row-name">${s.name}</div>
+          ${s.isNew ? '<div class="row-new">New · Home savings</div>' : ''}
+          ${s.note  ? `<div class="row-note">${s.note}</div>` : ''}
+        </div>
+      </div>
+      <div class="input-wrap">
+        <span class="input-symbol">$</span>
+        <input class="amount-input" type="number" value="${val}" data-key="${s.name}" data-type="savings" />
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('savingsTip').textContent = '💡 Saving ' + fmt(totalSav) + '/mo across all 5 accounts';
+
+  // Variable rows
+  const totalVar = Object.values(variable).reduce((a,b) => a + Number(b), 0);
+  document.getElementById('variableTotal').textContent = monthly ? fmt(totalVar) : fmt(totalVar / 2);
+  document.getElementById('variableRows').innerHTML = VARIABLE_META.map(v => {
+    const val = Number(variable[v.name] || 0);
+    const dot = CAT_DOT[v.category] || 'amber';
+    const txt = CAT_TEXT[v.category] || 'amber';
+    return `<div class="row">
+      <div class="row-left">
+        <div class="dot ${dot}"></div>
+        <div>
+          <div class="row-name">${v.name}</div>
+          <div class="row-meta"><span class="${txt}">${v.category}</span></div>
+        </div>
+      </div>
+      <div class="input-wrap">
+        <span class="input-symbol">$</span>
+        <input class="amount-input amber" type="number" value="${val}" data-key="${v.name}" data-type="variable" />
+      </div>
+    </div>`;
+  }).join('');
+
+  // Home tip
+  const homeSav = Number(savings['Home Fund ✨'] || 300);
+  document.getElementById('homeTipText').innerHTML =
+    `At <strong>${fmt(homeSav)}/month</strong> your Home Fund grows to <strong>${fmt(homeSav*12)}/year</strong>. In 3 years that's <strong>${fmt(homeSav*36)}+</strong> toward a down payment.`;
+
+  // Re-attach input listeners
+  document.querySelectorAll('.amount-input').forEach(input => {
+    input.addEventListener('change', onInputChange);
+  });
+}
+
+function renderMonthly() {
+  const t = calcMonthlyTotals();
+  const income = t.monthlyIncome;
+
+  // Banner
+  const banner = document.getElementById('banner');
+  banner.className = 'banner ' + (t.leftover >= TARGET ? 'green' : t.leftover >= 0 ? 'amber' : 'red');
+  document.getElementById('bannerLabel').textContent = 'Monthly left after everything (avg)';
+  document.getElementById('bannerAmount').textContent = fmt(t.leftover);
+  document.getElementById('bannerSub').textContent = fmt(income) + ' in · ' + fmt(t.totalOut) + ' out';
+  document.getElementById('bannerStatus').textContent = t.leftover >= TARGET
+    ? '✅ $400 breathing room hit! +' + fmt(t.leftover - TARGET) + ' extra'
+    : t.leftover >= 0
+      ? '⚠️ ' + fmt(TARGET - t.leftover) + ' short of your $400 goal'
+      : '❌ Over budget — reduce savings or spending';
+
+  // Fixed rows — show all with monthly amounts
+  document.getElementById('fixedTotal').textContent = fmt(t.totalFixed);
+  document.getElementById('fixedRows').innerHTML = FIXED_EXPENSES.map(e => {
+    const monthly = e.frequency === 'weekly' ? e.amount * (52/12) : e.amount;
+    const dot = CAT_DOT[e.category] || 'amber';
+    const txt = CAT_TEXT[e.category] || 'amber';
+    const due = e.frequency === 'weekly' ? 'Weekly' : `${ordinal(e.dayOfMonth)} of month`;
+    return `<div class="row">
+      <div class="row-left">
+        <div class="dot ${dot}"></div>
+        <div>
+          <div class="row-name">${e.name}</div>
+          <div class="row-meta">${due} · <span class="${txt}">${e.category}</span></div>
+        </div>
+      </div>
+      <div class="row-amount">${fmt(monthly)}</div>
+    </div>`;
+  }).join('');
+
+  // Breakdown
+  renderBreakdown(t.totalFixed, t.totalSavings, t.totalVariable, t.leftover, income);
+}
+
+function renderPaycheck() {
+  const startDate = payDates[pcIndex];
+  const endDate = new Date(startDate); endDate.setDate(endDate.getDate() + 13);
+  const t = calcPaycheckTotals(startDate);
+
+  // Paycheck picker — grouped by month
+  const grouped = {};
+  payDates.forEach((d, i) => {
+    const key = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push({ d, i });
+  });
+  document.getElementById('pcMonthGroups').innerHTML = Object.entries(grouped).map(([month, items]) =>
+    `<div class="month-group">
+      <div class="month-label">${month}</div>
+      <div class="pc-dates">
+        ${items.map(({ d, i }) =>
+          `<button class="pc-btn${i===pcIndex?' active':''}" onclick="setPcIndex(${i})">${fmtDate(d)}</button>`
+        ).join('')}
+      </div>
+    </div>`
+  ).join('');
+  document.getElementById('pcRange').textContent = fmtDate(startDate) + ' – ' + fmtDate(endDate);
+
+  // Banner
+  const displayLeftover = t.pcLeftover;
+  const banner = document.getElementById('banner');
+  banner.className = 'banner ' + (displayLeftover >= TARGET/2 ? 'green' : displayLeftover >= 0 ? 'amber' : 'red');
+  document.getElementById('bannerLabel').textContent = 'Left over · ' + fmtDate(startDate) + ' paycheck';
+  document.getElementById('bannerAmount').textContent = fmt(displayLeftover);
+  document.getElementById('bannerSub').textContent = fmt(paycheckAmount) + ' in · ' + fmt(t.pcTotal) + ' out';
+  document.getElementById('bannerStatus').textContent = '';
+
+  // Fixed rows — only what's due this period
+  document.getElementById('fixedTotal').textContent = fmt(t.pcFixed);
+  if (t.expenses.length === 0) {
+    document.getElementById('fixedRows').innerHTML = '<div class="empty-note">No fixed bills due this pay period</div>';
+  } else {
+    document.getElementById('fixedRows').innerHTML = t.expenses.map(e => {
+      const dot = CAT_DOT[e.category] || 'amber';
+      const txt = CAT_TEXT[e.category] || 'amber';
+      return `<div class="row">
+        <div class="row-left">
+          <div class="dot ${dot}"></div>
+          <div>
+            <div class="row-name">${e.name}</div>
+            <div class="row-meta">${e.due} · <span class="${txt}">${e.category}</span></div>
+          </div>
+        </div>
+        <div class="row-amount">${fmt(e.totalAmount)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Breakdown
+  renderBreakdown(t.pcFixed, t.pcSavings, t.pcVariable, displayLeftover, paycheckAmount);
+}
+
+function renderBreakdown(fixed, sav, vari, leftover, income) {
+  const rows = [
+    { label:'Fixed Bills', amount: fixed,    bar:'slate' },
+    { label:'Savings',     amount: sav,      bar:'blue' },
+    { label:'Variable',    amount: vari,      bar:'amber' },
+    { label:'Left Over',   amount: leftover,  bar: leftover>=0?'emerald':'red' },
+  ];
+  document.getElementById('breakdownRows').innerHTML = rows.map(r => {
+    const pct = Math.max(0, Math.min(100, (Math.abs(r.amount) / income) * 100));
+    const isLeft = r.label === 'Left Over';
+    const amtClass = isLeft ? (leftover >= 0 ? 'green' : 'red') : '';
+    return `<div class="breakdown-row">
+      <div class="breakdown-labels">
+        <span class="breakdown-label">${r.label}</span>
+        <span class="breakdown-amount ${amtClass}">${fmt(r.amount)}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill ${r.bar}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+function onInputChange(e) {
+  const key  = e.target.dataset.key;
+  const type = e.target.dataset.type;
+  const val  = Number(e.target.value) || 0;
+  if (type === 'savings')  savings[key]  = val;
+  if (type === 'variable') variable[key] = val;
+  save();
+  render();
+}
+
+document.getElementById('paycheckInput').addEventListener('change', e => {
+  paycheckAmount = Number(e.target.value) || 0;
+  save();
+  render();
+});
+
+// ── INIT ─────────────────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
