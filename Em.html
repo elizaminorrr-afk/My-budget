@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="My Budget" />
+  <title>Eliza's Budget</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b;min-height:100vh}
+    /* HEADER */
+    .header{background:#fff;border-bottom:1px solid #f1f5f9;padding:20px 16px 16px;position:sticky;top:0;z-index:20}
+    .header-top{display:flex;justify-content:space-between;align-items:flex-start}
+    .eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:2px}
+    .title{font-size:24px;font-weight:700;color:#1e293b}
+    .subtitle{font-size:13px;color:#94a3b8;margin-top:2px}
+    .subtitle strong{color:#475569}
+    .saved-badge{font-size:11px;color:#10b981;background:#ecfdf5;padding:4px 8px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .3s;flex-shrink:0;margin-top:4px}
+    .saved-badge.show{opacity:1}
+    .paycheck-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .paycheck-label{font-size:13px;color:#64748b}
+    .paycheck-input-wrap{display:flex;align-items:center;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;overflow:hidden}
+    .paycheck-symbol{padding:0 6px 0 8px;color:#94a3b8;font-size:14px}
+    .paycheck-input{width:72px;padding:6px 8px 6px 0;font-size:14px;font-weight:600;color:#1e293b;border:none;background:transparent;outline:none}
+    .paycheck-monthly{font-size:11px;color:#94a3b8}
+    /* TABS */
+    .tabs{display:flex;background:#fff;border-bottom:1px solid #f1f5f9;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .tab{padding:12px 16px;font-size:13px;font-weight:500;color:#94a3b8;border:none;background:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+    .tab.active{color:#1e293b;border-bottom-color:#1e293b}
+    /* CONTENT */
+    .content{padding:12px 16px 48px;display:flex;flex-direction:column;gap:12px;max-width:640px;margin:0 auto}
+    .page{display:none}.page.active{display:flex;flex-direction:column;gap:12px}
+    /* BANNER */
+    .banner{border-radius:20px;padding:20px;color:#fff}
+    .banner.green{background:#10b981}.banner.amber{background:#f59e0b}.banner.red{background:#ef4444}
+    .banner-label{font-size:13px;opacity:.8;margin-bottom:4px}
+    .banner-amount{font-size:44px;font-weight:700;letter-spacing:-1px;line-height:1}
+    .banner-sub{font-size:11px;opacity:.6;margin-top:4px}
+    .banner-status{font-size:12px;font-weight:600;opacity:.9;margin-top:8px}
+    /* PAYCHECK PICKER */
+    .pc-picker{background:#fff;border-radius:20px;border:1px solid #f1f5f9;padding:16px}
+    .section-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px}
+    .month-group{margin-bottom:16px}
+    .month-label{font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px}
+    .pc-dates{display:flex;flex-wrap:wrap;gap:8px}
+    .pc-btn{padding:6px 12px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer}
+    .pc-btn.active{background:#1e293b;color:#fff;border-color:#1e293b}
+    .pc-range{font-size:11px;color:#94a3b8;margin-top:8px}
+    /* CARDS */
+    .card{background:#fff;border-radius:20px;border:1px solid #f1f5f9;overflow:hidden}
+    .card-header{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center}
+    .card-title{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8}
+    .card-total{font-size:14px;font-weight:600;color:#475569}
+    .card-tip{padding:10px 16px;font-size:11px}
+    .card-tip.blue{background:#eff6ff;color:#2563eb}
+    .card-tip.amber{background:#fffbeb;color:#d97706}
+    .card-tip.purple{background:#f5f3ff;color:#7c3aed}
+    .card-tip.green{background:#f0fdf4;color:#16a34a}
+    .empty-note{padding:12px 16px;font-size:13px;color:#94a3b8;font-style:italic}
+    /* ROWS */
+    .row{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f8fafc}
+    .row:first-child{border-top:none}
+    .row-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .dot.rose{background:#fb7185}.dot.emerald{background:#34d399}.dot.violet{background:#a78bfa}
+    .dot.blue{background:#60a5fa}.dot.amber{background:#fbbf24}.dot.orange{background:#fb923c}
+    .dot.purple{background:#c084fc}.dot.teal{background:#2dd4bf}
+    .row-name{font-size:14px;color:#334155}
+    .row-meta{font-size:11px;color:#94a3b8;margin-top:1px}
+    .row-meta span{font-weight:500}
+    .row-meta span.rose{color:#e11d48}.row-meta span.emerald{color:#059669}.row-meta span.violet{color:#7c3aed}
+    .row-meta span.blue{color:#2563eb}.row-meta span.amber{color:#d97706}.row-meta span.orange{color:#ea580c}
+    .row-meta span.purple{color:#9333ea}
+    .row-amount{font-size:14px;font-weight:600;color:#1e293b;white-space:nowrap;margin-left:8px}
+    .emoji{font-size:18px}
+    .row-note{font-size:11px;color:#94a3b8}
+    .row-new{font-size:11px;color:#3b82f6;font-weight:500}
+    /* INPUTS */
+    .input-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
+    .input-symbol{color:#cbd5e1;font-size:14px}
+    .amt-input{width:72px;text-align:right;border:1px solid #e2e8f0;border-radius:8px;padding:5px 8px;font-size:14px;color:#1e293b;outline:none;font-family:inherit}
+    .amt-input:focus{border-color:#93c5fd}
+    .amt-input.amber:focus{border-color:#fcd34d}
+    /* EDIT PANEL */
+    .edit-panel{background:#f8fafc;border-top:1px solid #f1f5f9;padding:10px 16px 14px;display:none}
+    .edit-panel.open{display:block}
+    .edit-fields{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+    .edit-name{flex:1;min-width:120px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px;color:#1e293b;outline:none;font-family:inherit;background:#fff}
+    .edit-name:focus{border-color:#93c5fd}
+    .edit-small{width:60px;text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;font-size:13px;color:#1e293b;outline:none;font-family:inherit;background:#fff}
+    .edit-small:focus{border-color:#93c5fd}
+    .edit-select{border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;font-size:13px;color:#1e293b;outline:none;font-family:inherit;background:#fff}
+    .btn-save{padding:5px 12px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+    .btn-del{padding:5px 10px;background:#fff;color:#f87171;border:1px solid #fecaca;border-radius:8px;font-size:12px;cursor:pointer}
+    .btn-edit{padding:3px 8px;background:#f1f5f9;color:#64748b;border:none;border-radius:6px;font-size:11px;cursor:pointer;margin-left:4px}
+    /* ADD ROW */
+    .add-btn{margin:8px 16px 14px;padding:9px 16px;background:#f8fafc;color:#64748b;border:1px dashed #e2e8f0;border-radius:12px;font-size:13px;font-weight:500;cursor:pointer;width:calc(100% - 32px);text-align:left}
+    .add-btn:hover{background:#f1f5f9}
+    /* BREAKDOWN */
+    .breakdown-row{margin-bottom:12px}
+    .breakdown-row:last-child{margin-bottom:0}
+    .breakdown-labels{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+    .breakdown-label{color:#64748b}
+    .breakdown-amount{font-weight:600;color:#1e293b}
+    .breakdown-amount.green{color:#10b981}.breakdown-amount.red{color:#ef4444}
+    .bar-track{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:99px;transition:width .3s}
+    .bar-fill.slate{background:#94a3b8}.bar-fill.blue{background:#60a5fa}.bar-fill.amber{background:#fbbf24}
+    .bar-fill.purple{background:#c084fc}.bar-fill.emerald{background:#34d399}.bar-fill.red{background:#f87171}
+    /* CC TRACKER */
+    .cc-charge{padding:11px 16px;border-top:1px solid #f8fafc;display:flex;align-items:center;gap:10px}
+    .cc-charge:first-child{border-top:none}
+    .cc-charge.paid .cc-charge-name{text-decoration:line-through;color:#94a3b8}
+    .cc-charge.paid .cc-charge-amt{color:#94a3b8}
+    .cc-charge-left{flex:1;min-width:0}
+    .cc-charge-name{font-size:14px;color:#334155}
+    .cc-charge-meta{font-size:11px;color:#94a3b8;margin-top:1px}
+    .cc-charge-amt{font-size:14px;font-weight:600;color:#1e293b;white-space:nowrap}
+    .cc-paid-btn{padding:3px 8px;font-size:11px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;flex-shrink:0}
+    .cc-paid-btn.paid{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0}
+    .cc-del-btn{background:none;border:none;color:#fca5a5;font-size:15px;cursor:pointer;flex-shrink:0;padding:0 2px}
+    .cc-add-form{padding:12px 16px;border-top:1px solid #f8fafc;display:none}
+    .cc-add-form.open{display:block}
+    .cc-form-fields{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+    .cc-name-input{flex:1;min-width:120px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px;color:#1e293b;outline:none;font-family:inherit}
+    .cc-name-input:focus{border-color:#c084fc}
+    .cc-amt-input{width:80px;text-align:right;border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;font-size:13px;color:#1e293b;outline:none;font-family:inherit}
+    .cc-amt-input:focus{border-color:#c084fc}
+    .cc-pc-select{border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;font-size:12px;color:#1e293b;outline:none;font-family:inherit;max-width:110px}
+    .cc-pc-select:focus{border-color:#c084fc}
+    .btn-cc-add{padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+    .cc-summary{padding:10px 16px;background:#f5f3ff;font-size:12px;color:#7c3aed;display:flex;justify-content:space-between}
+    /* HOME TIP */
+    .home-tip{background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:20px;padding:20px;color:#fff}
+    .home-tip-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.5;margin-bottom:8px}
+    .home-tip-text{font-size:13px;line-height:1.6;opacity:.85}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="eyebrow">Eliza's</div>
+      <div class="title">Monthly Budget</div>
+      <div class="subtitle">Next paycheck · <strong>July 3</strong> · Biweekly</div>
+    </div>
+    <div class="saved-badge" id="savedBadge">✓ Saved</div>
+  </div>
+  <div class="paycheck-row">
+    <span class="paycheck-label">Take-home per paycheck:</span>
+    <div class="paycheck-input-wrap">
+      <span class="paycheck-symbol">$</span>
+      <input class="paycheck-input" type="number" id="paycheckInput" value="1600" />
+    </div>
+    <span class="paycheck-monthly" id="monthlyLabel">= $3,200.00/mo</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('monthly')">📊 Monthly</button>
+  <button class="tab" onclick="showTab('paycheck')">💰 By Paycheck</button>
+
+  <button class="tab" onclick="showTab('manage')">⚙️ Manage</button>
+</div>
+
+<div class="content">
+
+  <!-- ── MONTHLY TAB ───────────────────────────────────────── -->
+  <div class="page active" id="page-monthly">
+
+    <div class="banner green" id="m-banner">
+      <div class="banner-label">Monthly left after everything (avg)</div>
+      <div class="banner-amount" id="m-amount">$0.00</div>
+      <div class="banner-sub" id="m-sub"></div>
+      <div class="banner-status" id="m-status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Fixed Expenses</div><div class="card-total" id="m-fixed-total"></div></div>
+      <div id="m-fixed-rows"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Savings Accounts</div><div class="card-total" id="m-sav-total"></div></div>
+      <div id="m-sav-rows"></div>
+      <div class="card-tip blue" id="m-sav-tip"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Variable Expenses</div><div class="card-total" id="m-var-total"></div></div>
+      <div id="m-var-rows"></div>
+      <div class="card-tip amber">💡 Adjust freely — give yourself breathing room here</div>
+    </div>
+
+    <div class="card" style="padding:16px">
+      <div class="section-label">Where Your Money Goes</div>
+      <div id="m-breakdown"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">💳 Credit Card Overview</div><div class="card-total" id="m-cc-total"></div></div>
+      <div id="m-cc-overview"></div>
+      <div class="card-tip purple" id="m-cc-tip"></div>
+    </div>
+
+    <div class="home-tip">
+      <div class="home-tip-label">🏠 Home Fund</div>
+      <div class="home-tip-text" id="m-home-tip"></div>
+    </div>
+
+  </div>
+
+  <!-- ── PAYCHECK TAB ──────────────────────────────────────── -->
+  <div class="page" id="page-paycheck">
+
+    <div class="banner green" id="pc-banner">
+      <div class="banner-label" id="pc-banner-label">Left over this paycheck</div>
+      <div class="banner-amount" id="pc-amount">$0.00</div>
+      <div class="banner-sub" id="pc-sub"></div>
+      <div class="banner-status" id="pc-status"></div>
+    </div>
+
+    <div class="pc-picker">
+      <div class="section-label">Select Paycheck</div>
+      <div id="pc-month-groups"></div>
+      <div class="pc-range" id="pc-range"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Fixed Expenses Due</div><div class="card-total" id="pc-fixed-total"></div></div>
+      <div id="pc-fixed-rows"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Savings This Paycheck</div><div class="card-total" id="pc-sav-total"></div></div>
+      <div id="pc-sav-rows"></div>
+      <div class="card-tip blue">💡 Defaults shown — adjust any account for this paycheck only</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Variable Expenses</div><div class="card-total" id="pc-var-total"></div></div>
+      <div id="pc-var-rows"></div>
+    </div>
+
+    <div class="card" style="padding:16px">
+      <div class="section-label">This Paycheck Breakdown</div>
+      <div id="pc-breakdown"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💳 CC Charges This Paycheck</div>
+        <div class="card-total" id="pc-cc-total"></div>
+      </div>
+      <div id="pc-cc-list"></div>
+      <div class="cc-add-form" id="pc-cc-form">
+        <div class="section-label" style="margin:0 0 8px">Add Charge</div>
+        <div class="cc-form-fields">
+          <input class="cc-name-input" id="pc-cc-name" type="text" placeholder="e.g. Target, Amazon..." />
+          <div class="input-wrap"><span class="input-symbol" style="color:#c084fc">$</span>
+            <input class="cc-amt-input" id="pc-cc-amt" type="number" placeholder="0.00" />
+          </div>
+          <button class="btn-cc-add" onclick="addPcCharge()">Add</button>
+        </div>
+      </div>
+      <button class="add-btn" onclick="togglePcCCForm()" id="pc-cc-toggle-btn">+ Add CC Charge</button>
+    </div>
+
+  </div>
+
+  <!-- ── CC TRACKER TAB ────────────────────────────────────── -->
+  <div class="page" id="page-cc">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Credit Card Charges</div>
+        <div class="card-total" id="cc-total-badge"></div>
+      </div>
+      <div class="cc-summary" id="cc-summary"></div>
+      <div id="cc-charge-list"></div>
+      <div class="cc-add-form" id="cc-add-form">
+        <div class="section-label" style="margin:0 0 8px">Add New Charge</div>
+        <div class="cc-form-fields">
+          <input class="cc-name-input" id="cc-new-name" type="text" placeholder="e.g. Target, Amazon..." />
+          <div class="input-wrap"><span class="input-symbol" style="color:#c084fc">$</span>
+            <input class="cc-amt-input" id="cc-new-amt" type="number" placeholder="0.00" />
+          </div>
+          <select class="cc-pc-select" id="cc-new-pc"></select>
+          <button class="btn-cc-add" onclick="addCharge()">Add</button>
+        </div>
+      </div>
+      <button class="add-btn" onclick="toggleCCForm()" id="cc-toggle-btn">+ Add Charge</button>
+    </div>
+
+    <div class="card-tip purple" style="border-radius:20px;padding:14px 16px;font-size:12px">
+      💳 Log each charge and assign it to a paycheck. Mark paid when you cover it — it'll stay visible but crossed out so you can track what's been handled.
+    </div>
+
+  </div>
+
+  <!-- ── MANAGE TAB ────────────────────────────────────────── -->
+  <div class="page" id="page-manage">
+
+    <!-- FIXED -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Fixed Expenses</div></div>
+      <div id="manage-fixed-rows"></div>
+      <button class="add-btn" onclick="addFixed()">+ Add Fixed Expense</button>
+    </div>
+
+    <!-- SAVINGS -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Savings Accounts</div></div>
+      <div id="manage-sav-rows"></div>
+      <button class="add-btn" onclick="addSavings()">+ Add Savings Account</button>
+    </div>
+
+    <!-- VARIABLE -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Variable Expenses</div></div>
+      <div id="manage-var-rows"></div>
+      <button class="add-btn" onclick="addVariable()">+ Add Variable Expense</button>
+    </div>
+
+    <div class="card-tip green" style="border-radius:20px;padding:14px 16px;font-size:12px">
+      ✅ Changes here update your Monthly and Paycheck views automatically and save instantly.
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── CONSTANTS ────────────────────────────────────────────────
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const TARGET = 400;
+const CAT_DOT  = {Giving:"rose",Health:"emerald",Subscriptions:"violet",Savings:"blue",Essentials:"amber",Lifestyle:"orange","Credit Card":"purple",Bills:"teal"};
+const CAT_TEXT = {Giving:"rose",Health:"emerald",Subscriptions:"violet",Savings:"blue",Essentials:"amber",Lifestyle:"orange","Credit Card":"purple",Bills:"teal"};
+
+// ── STATE ────────────────────────────────────────────────────
+let paycheckAmount = 1600;
+let pcIndex = 0;
+
+// Fixed expenses: {id, name, amount, frequency:'weekly'|'monthly'|'biweekly', dayOfMonth, category}
+let fixedExpenses = [
+  {id:1, name:"2819 Church (tithing)",    amount:20,    frequency:"weekly",   dayOfMonth:null, category:"Giving"},
+  {id:2, name:"Vizion Church (tithing)",  amount:20,    frequency:"weekly",   dayOfMonth:null, category:"Giving"},
+  {id:3, name:"Club Pilates",             amount:259,   frequency:"monthly",  dayOfMonth:1,    category:"Health"},
+  {id:4, name:"Crunch Fitness",           amount:32.24, frequency:"monthly",  dayOfMonth:2,    category:"Health"},
+  {id:5, name:"Hulu",                     amount:21.39, frequency:"monthly",  dayOfMonth:5,    category:"Subscriptions"},
+  {id:6, name:"Apple Storage",            amount:9.99,  frequency:"monthly",  dayOfMonth:12,   category:"Subscriptions"},
+  {id:7, name:"Roth IRA (Merrill Lynch)", amount:200,   frequency:"monthly",  dayOfMonth:20,   category:"Savings"},
+  {id:8, name:"Peacock",                  amount:16.99, frequency:"monthly",  dayOfMonth:24,   category:"Subscriptions"},
+];
+
+// Savings: {id, name, emoji, defaultAmount}
+let savingsAccounts = [
+  {id:1, name:"General Savings",  emoji:"🏦", defaultAmount:300},
+  {id:2, name:"No-Touch Savings", emoji:"🔒", defaultAmount:300},
+  {id:3, name:"Dog Fund",         emoji:"🐾", defaultAmount:300, note:"Covers vet, food & pet costs"},
+  {id:4, name:"Car Fund",         emoji:"🚗", defaultAmount:300},
+  {id:5, name:"Home Fund ✨",     emoji:"🏠", defaultAmount:300},
+];
+
+// Variable: {id, name, category, amount}
+let variableExpenses = [
+  {id:1, name:"Groceries",  category:"Essentials", amount:200},
+  {id:2, name:"Gas",        category:"Essentials", amount:150},
+  {id:3, name:"Eating Out", category:"Lifestyle",  amount:120},
+];
+
+// Per-paycheck savings overrides: { "pcIndex_savId": amount }
+let pcSavingsOverrides = {};
+
+// CC charges: {id, name, amount, pcIndex, paid}
+let ccCharges = [];
+
+let nextId = 100;
+
+// ── PAY DATES ────────────────────────────────────────────────
+function getPayDates() {
+  const dates = [];
+  let d = new Date(2026,6,3);
+  for(let i=0;i<26;i++){dates.push(new Date(d));d.setDate(d.getDate()+14);}
+  return dates;
+}
+const payDates = getPayDates();
+
+function fmt(n){return '$'+Number(n).toFixed(2);}
+function fmtDate(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+// ── EXPENSE LOOKUP ───────────────────────────────────────────
+function getFixedForPeriod(startDate) {
+  const start = new Date(startDate); start.setHours(0,0,0,0);
+  const end = new Date(start); end.setDate(end.getDate()+13); end.setHours(23,59,59,999);
+  const result = [];
+
+  // One-time: Club Pilates on July 3 paycheck
+  const isJuly3 = start.getFullYear()===2026 && start.getMonth()===6 && start.getDate()===3;
+
+  for(const exp of fixedExpenses){
+    if(exp.frequency==='weekly'){
+      let count=0, d=new Date(start);
+      while(d<=end){if(d.getDay()===0)count++;d.setDate(d.getDate()+1);}
+      if(count>0) result.push({...exp, totalAmount:exp.amount*count, due:count===1?'Weekly (1x)':`Weekly (${count}x)`});
+    } else if(exp.frequency==='monthly'){
+      if(isJuly3 && exp.dayOfMonth===1){
+        result.push({...exp, totalAmount:exp.amount, due:'Jul 1 (carried fwd)'});
+        continue;
+      }
+      let d=new Date(start);
+      while(d<=end){
+        if(d.getDate()===exp.dayOfMonth){result.push({...exp,totalAmount:exp.amount,due:fmtDate(d)});break;}
+        d.setDate(d.getDate()+1);
+      }
+    }
+  }
+  return result;
+}
+
+// ── PER-PAYCHECK SAVINGS ─────────────────────────────────────
+function getPcSavingsAmount(pcIdx, savId) {
+  const key = `${pcIdx}_${savId}`;
+  return pcSavingsOverrides[key] !== undefined ? pcSavingsOverrides[key] : null;
+}
+function setPcSavingsAmount(pcIdx, savId, val) {
+  const key = `${pcIdx}_${savId}`;
+  pcSavingsOverrides[key] = val;
+  save(); renderPaycheck();
+}
+
+// ── MONTHLY TOTALS ───────────────────────────────────────────
+function calcMonthly() {
+  let annualFixed = 0;
+  for(const e of fixedExpenses){
+    if(e.frequency==='weekly') annualFixed += e.amount*52;
+    else if(e.frequency==='monthly') annualFixed += e.amount*12;
+  }
+  const totalFixed = annualFixed/12;
+  const totalSav = savingsAccounts.reduce((s,a)=>s+Number(a.defaultAmount),0);
+  const totalVar = variableExpenses.reduce((s,e)=>s+Number(e.amount),0);
+  const income = paycheckAmount*2;
+  const totalOut = totalFixed+totalSav+totalVar;
+  return {income, totalFixed, totalSav, totalVar, totalOut, leftover:income-totalOut};
+}
+
+// ── STORAGE ──────────────────────────────────────────────────
+function load() {
+  try {
+    const d = localStorage.getItem('eliza_budget_v2');
+    if(d){
+      const p = JSON.parse(d);
+      if(p.paycheckAmount) paycheckAmount = p.paycheckAmount;
+      if(p.fixedExpenses)  fixedExpenses  = p.fixedExpenses;
+      if(p.savingsAccounts) savingsAccounts = p.savingsAccounts;
+      if(p.variableExpenses) variableExpenses = p.variableExpenses;
+      if(p.pcSavingsOverrides) pcSavingsOverrides = p.pcSavingsOverrides;
+      if(p.ccCharges) ccCharges = p.ccCharges;
+      if(p.nextId) nextId = p.nextId;
+      document.getElementById('paycheckInput').value = paycheckAmount;
+    }
+  } catch(e){}
+}
+
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try {
+      localStorage.setItem('eliza_budget_v2', JSON.stringify({
+        paycheckAmount, fixedExpenses, savingsAccounts, variableExpenses,
+        pcSavingsOverrides, ccCharges, nextId
+      }));
+      const b = document.getElementById('savedBadge');
+      b.classList.add('show');
+      setTimeout(()=>b.classList.remove('show'),1500);
+    } catch(e){}
+  },400);
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='monthly') renderMonthly();
+  if(name==='paycheck') renderPaycheck();
+  if(name==='manage') renderManage();
+}
+
+// ── RENDER MONTHLY ───────────────────────────────────────────
+function renderMonthly() {
+  const t = calcMonthly();
+  // Banner
+  const b = document.getElementById('m-banner');
+  b.className = 'banner '+(t.leftover>=TARGET?'green':t.leftover>=0?'amber':'red');
+  document.getElementById('m-amount').textContent = fmt(t.leftover);
+  document.getElementById('m-sub').textContent = fmt(t.income)+' in · '+fmt(t.totalOut)+' out';
+  document.getElementById('m-status').textContent = t.leftover>=TARGET
+    ?'✅ $400 goal hit! +'+fmt(t.leftover-TARGET)+' extra'
+    :t.leftover>=0?'⚠️ '+fmt(TARGET-t.leftover)+' short of $400 goal'
+    :'❌ Over budget';
+
+  // Fixed
+  document.getElementById('m-fixed-total').textContent = fmt(t.totalFixed);
+  document.getElementById('m-fixed-rows').innerHTML = fixedExpenses.map(e=>{
+    const mo = e.frequency==='weekly'?e.amount*(52/12):e.amount;
+    const dot = CAT_DOT[e.category]||'amber';
+    const txt = CAT_TEXT[e.category]||'amber';
+    const due = e.frequency==='weekly'?'Weekly':ordinal(e.dayOfMonth)+' of month';
+    return `<div class="row"><div class="row-left"><div class="dot ${dot}"></div><div>
+      <div class="row-name">${e.name}</div>
+      <div class="row-meta">${due} · <span class="${txt}">${e.category}</span></div>
+    </div></div><div class="row-amount">${fmt(mo)}</div></div>`;
+  }).join('');
+
+  // Savings
+  document.getElementById('m-sav-total').textContent = fmt(t.totalSav);
+  document.getElementById('m-sav-rows').innerHTML = savingsAccounts.map(s=>`
+    <div class="row"><div class="row-left"><span class="emoji">${s.emoji}</span><div>
+      <div class="row-name">${s.name}</div>
+      ${s.note?`<div class="row-note">${s.note}</div>`:''}
+    </div></div><div class="row-amount">${fmt(s.defaultAmount)}/mo</div></div>`).join('');
+  document.getElementById('m-sav-tip').textContent = '💡 Saving '+fmt(t.totalSav)+'/mo across all accounts';
+
+  // Variable
+  document.getElementById('m-var-total').textContent = fmt(t.totalVar);
+  document.getElementById('m-var-rows').innerHTML = variableExpenses.map(e=>{
+    const dot = CAT_DOT[e.category]||'amber';
+    const txt = CAT_TEXT[e.category]||'amber';
+    return `<div class="row"><div class="row-left"><div class="dot ${dot}"></div><div>
+      <div class="row-name">${e.name}</div>
+      <div class="row-meta"><span class="${txt}">${e.category}</span></div>
+    </div></div><div class="row-amount">${fmt(e.amount)}/mo</div></div>`;
+  }).join('');
+
+  // Breakdown
+  renderBreakdown('m-breakdown', t.totalFixed, t.totalSav, t.totalVar, t.leftover, t.income);
+
+  // Home tip
+  const home = savingsAccounts.find(s=>s.name.includes('Home'));
+  const hamt = home?home.defaultAmount:300;
+  document.getElementById('m-home-tip').innerHTML =
+    `At <strong>${fmt(hamt)}/month</strong> your Home Fund grows to <strong>${fmt(hamt*12)}/year</strong>. In 3 years: <strong>${fmt(hamt*36)}+</strong>.`;
+
+  // CC monthly overview — group by paycheck month
+  renderMonthlyCCOverview();
+}
+
+function renderMonthlyCCOverview() {
+  if(!ccCharges || ccCharges.length===0){
+    document.getElementById('m-cc-total').textContent='$0.00';
+    document.getElementById('m-cc-overview').innerHTML='<div class="empty-note">No CC charges logged yet</div>';
+    document.getElementById('m-cc-tip').textContent='';
+    return;
+  }
+  const total = ccCharges.reduce((s,c)=>s+Number(c.amount),0);
+  const paid  = ccCharges.filter(c=>c.paid).reduce((s,c)=>s+Number(c.amount),0);
+  const owing = total - paid;
+  document.getElementById('m-cc-total').textContent = fmt(owing)+' owed';
+
+  // Group by paycheck date label
+  const byPc = {};
+  ccCharges.forEach(c=>{
+    const pd = payDates[c.pcIndex];
+    const key = pd ? fmtDate(pd) : 'Unassigned';
+    if(!byPc[key]) byPc[key]={charges:[],total:0,paid:0};
+    byPc[key].charges.push(c);
+    byPc[key].total += Number(c.amount);
+    if(c.paid) byPc[key].paid += Number(c.amount);
+  });
+
+  document.getElementById('m-cc-overview').innerHTML = Object.entries(byPc).map(([label,g])=>`
+    <div class="row">
+      <div class="row-left"><div class="dot purple"></div><div>
+        <div class="row-name">Paycheck ${label}</div>
+        <div class="row-meta">${g.charges.length} charge${g.charges.length!==1?'s':''} · <span class="purple">${fmt(g.paid)} paid</span></div>
+      </div></div>
+      <div class="row-amount" style="color:${g.total===g.paid?'#10b981':'#1e293b'}">${fmt(g.total-g.paid)} left</div>
+    </div>`).join('');
+
+  document.getElementById('m-cc-tip').textContent =
+    `💳 Total charged: ${fmt(total)} · Paid off: ${fmt(paid)} · Still owed: ${fmt(owing)}`;
+  document.getElementById('m-cc-tip').className = 'card-tip purple';
+}
+
+// ── RENDER PAYCHECK ──────────────────────────────────────────
+function renderPaycheck() {
+  const startDate = payDates[pcIndex];
+  const endDate = new Date(startDate); endDate.setDate(endDate.getDate()+13);
+  const expenses = getFixedForPeriod(startDate);
+
+  // Picker
+  const grouped = {};
+  payDates.forEach((d,i)=>{
+    const key = MONTHS[d.getMonth()]+' '+d.getFullYear();
+    if(!grouped[key]) grouped[key]=[];
+    grouped[key].push({d,i});
+  });
+  document.getElementById('pc-month-groups').innerHTML = Object.entries(grouped).map(([month,items])=>
+    `<div class="month-group"><div class="month-label">${month}</div><div class="pc-dates">
+      ${items.map(({d,i})=>`<button class="pc-btn${i===pcIndex?' active':''}" onclick="setPc(${i})">${fmtDate(d)}</button>`).join('')}
+    </div></div>`).join('');
+  document.getElementById('pc-range').textContent = fmtDate(startDate)+' – '+fmtDate(endDate);
+
+  // Fixed
+  const pcFixed = expenses.reduce((s,e)=>s+Number(e.totalAmount),0);
+  document.getElementById('pc-fixed-total').textContent = fmt(pcFixed);
+  document.getElementById('pc-fixed-rows').innerHTML = expenses.length===0
+    ?'<div class="empty-note">No fixed bills due this paycheck 🎉</div>'
+    :expenses.map(e=>{
+      const dot=CAT_DOT[e.category]||'amber', txt=CAT_TEXT[e.category]||'amber';
+      return `<div class="row"><div class="row-left"><div class="dot ${dot}"></div><div>
+        <div class="row-name">${e.name}</div>
+        <div class="row-meta">${e.due} · <span class="${txt}">${e.category}</span></div>
+      </div></div><div class="row-amount">${fmt(e.totalAmount)}</div></div>`;
+    }).join('');
+
+  // Savings — per paycheck with overrides
+  let pcSavTotal = 0;
+  const savRows = savingsAccounts.map(s=>{
+    const override = getPcSavingsAmount(pcIndex, s.id);
+    const val = override !== null ? override : Number(s.defaultAmount)/2;
+    pcSavTotal += val;
+    return `<div class="row"><div class="row-left"><span class="emoji">${s.emoji}</span><div>
+      <div class="row-name">${s.name}</div>
+      ${override!==null?'<div class="row-note" style="color:#f59e0b">Custom amount for this paycheck</div>':'<div class="row-note">Default (½ of monthly)</div>'}
+    </div></div>
+    <div class="input-wrap"><span class="input-symbol">$</span>
+      <input class="amt-input" type="number" value="${val.toFixed(0)}"
+        onchange="setPcSavingsAmount(${pcIndex},${s.id},Number(this.value))" />
+    </div></div>`;
+  }).join('');
+  document.getElementById('pc-sav-total').textContent = fmt(pcSavTotal);
+  document.getElementById('pc-sav-rows').innerHTML = savRows;
+
+  // Variable (half of monthly)
+  const pcVar = variableExpenses.reduce((s,e)=>s+Number(e.amount)/2,0);
+  document.getElementById('pc-var-total').textContent = fmt(pcVar);
+  document.getElementById('pc-var-rows').innerHTML = variableExpenses.map(e=>{
+    const dot=CAT_DOT[e.category]||'amber', txt=CAT_TEXT[e.category]||'amber';
+    return `<div class="row"><div class="row-left"><div class="dot ${dot}"></div><div>
+      <div class="row-name">${e.name}</div>
+      <div class="row-meta"><span class="${txt}">${e.category}</span></div>
+    </div></div><div class="row-amount">${fmt(Number(e.amount)/2)}</div></div>`;
+  }).join('');
+
+  // Banner
+  const pcTotal = pcFixed + pcSavTotal + pcVar;
+  const leftover = paycheckAmount - pcTotal;
+  const banner = document.getElementById('pc-banner');
+  banner.className = 'banner '+(leftover>=TARGET/2?'green':leftover>=0?'amber':'red');
+  document.getElementById('pc-banner-label').textContent = 'Left over · '+fmtDate(startDate)+' paycheck';
+  document.getElementById('pc-amount').textContent = fmt(leftover);
+  document.getElementById('pc-sub').textContent = fmt(paycheckAmount)+' in · '+fmt(pcTotal)+' out';
+  document.getElementById('pc-status').textContent = leftover>=(TARGET/2)
+    ?'✅ Looking good this paycheck!'
+    :leftover>=0?'⚠️ Tight — check your savings amounts'
+    :'❌ Over — reduce savings or variable this check';
+
+  renderBreakdown('pc-breakdown', pcFixed, pcSavTotal, pcVar, leftover, paycheckAmount);
+
+  // CC charges for this paycheck
+  renderPcCC();
+}
+
+function renderPcCC() {
+  const myCharges = ccCharges.filter(c=>c.pcIndex===pcIndex);
+  const total = myCharges.reduce((s,c)=>s+Number(c.amount),0);
+  const paid  = myCharges.filter(c=>c.paid).reduce((s,c)=>s+Number(c.amount),0);
+  const owing = total - paid;
+  document.getElementById('pc-cc-total').textContent = myCharges.length===0 ? '' : fmt(owing)+' owed';
+
+  document.getElementById('pc-cc-list').innerHTML = myCharges.length===0
+    ? '<div class="empty-note">No CC charges for this paycheck yet</div>'
+    : myCharges.map(c=>`
+      <div class="cc-charge${c.paid?' paid':''}">
+        <div class="cc-charge-left">
+          <div class="cc-charge-name">${c.name}</div>
+          <div class="cc-charge-meta">${c.paid?'✓ Paid — still tracking':'Unpaid'}</div>
+        </div>
+        <div class="cc-charge-amt">${fmt(c.amount)}</div>
+        <button class="cc-paid-btn${c.paid?' paid':''}" onclick="togglePcPaid(${c.id})">${c.paid?'Paid':'Mark Paid'}</button>
+        <button class="cc-del-btn" onclick="deletePcCharge(${c.id})">✕</button>
+      </div>`).join('');
+}
+
+function togglePcCCForm() {
+  const f = document.getElementById('pc-cc-form');
+  const b = document.getElementById('pc-cc-toggle-btn');
+  const open = f.classList.toggle('open');
+  b.textContent = open ? '✕ Cancel' : '+ Add CC Charge';
+}
+
+function addPcCharge() {
+  const name = document.getElementById('pc-cc-name').value.trim();
+  const amt  = Number(document.getElementById('pc-cc-amt').value);
+  if(!name || !amt) return;
+  ccCharges.push({id:nextId++, name, amount:amt, pcIndex:pcIndex, paid:false});
+  document.getElementById('pc-cc-name').value='';
+  document.getElementById('pc-cc-amt').value='';
+  save(); renderPcCC(); renderMonthlyCCOverview();
+}
+
+function togglePcPaid(id) {
+  const c = ccCharges.find(c=>c.id===id);
+  if(c){c.paid=!c.paid; save(); renderPcCC(); renderMonthlyCCOverview();}
+}
+
+function deletePcCharge(id) {
+  ccCharges = ccCharges.filter(c=>c.id!==id);
+  save(); renderPcCC(); renderMonthlyCCOverview();
+}
+
+function setPc(i){pcIndex=i;renderPaycheck();}
+
+// ── RENDER CC ────────────────────────────────────────────────
+function renderCC() {
+  const total = ccCharges.reduce((s,c)=>s+Number(c.amount),0);
+  const paid  = ccCharges.filter(c=>c.paid).reduce((s,c)=>s+Number(c.amount),0);
+  const owing = total - paid;
+  document.getElementById('cc-total-badge').textContent = fmt(owing)+' remaining';
+  document.getElementById('cc-summary').innerHTML =
+    `<span>Total charges: ${fmt(total)}</span><span>Paid: ${fmt(paid)}</span><span style="font-weight:600">Owed: ${fmt(owing)}</span>`;
+
+  // Group by paycheck
+  const byPc = {};
+  ccCharges.forEach(c=>{
+    if(!byPc[c.pcIndex]) byPc[c.pcIndex]=[];
+    byPc[c.pcIndex].push(c);
+  });
+
+  let html = '';
+  // Show current paycheck first, then others
+  const pcKeys = Object.keys(byPc).map(Number).sort((a,b)=>{
+    if(a===pcIndex) return -1;
+    if(b===pcIndex) return 1;
+    return a-b;
+  });
+
+  if(ccCharges.length===0){
+    html='<div class="empty-note">No charges logged yet — tap "+ Add Charge" below</div>';
+  } else {
+    for(const pi of pcKeys){
+      const pd = payDates[pi];
+      const label = pd ? 'Paycheck '+fmtDate(pd) : 'Unassigned';
+      const charges = byPc[pi];
+      const pcTotal = charges.reduce((s,c)=>s+Number(c.amount),0);
+      html += `<div style="padding:10px 16px 4px;font-size:11px;font-weight:600;color:#64748b;background:#f8fafc;border-top:1px solid #f1f5f9">
+        ${label} · ${fmt(pcTotal)}</div>`;
+      html += charges.map(c=>`
+        <div class="cc-charge${c.paid?' paid':''}" id="cc-${c.id}">
+          <div class="cc-charge-left">
+            <div class="cc-charge-name">${c.name}</div>
+            <div class="cc-charge-meta">${c.paid?'✓ Paid':'Unpaid'}</div>
+          </div>
+          <div class="cc-charge-amt">${fmt(c.amount)}</div>
+          <button class="cc-paid-btn${c.paid?' paid':''}" onclick="togglePaid(${c.id})">${c.paid?'Paid':'Mark Paid'}</button>
+          <button class="cc-del-btn" onclick="deleteCharge(${c.id})">✕</button>
+        </div>`).join('');
+    }
+  }
+  document.getElementById('cc-charge-list').innerHTML = html;
+
+  // Populate paycheck selector in add form
+  const sel = document.getElementById('cc-new-pc');
+  sel.innerHTML = payDates.map((d,i)=>`<option value="${i}"${i===pcIndex?' selected':''}>${fmtDate(d)}</option>`).join('');
+}
+
+function toggleCCForm() {
+  const f = document.getElementById('cc-add-form');
+  const b = document.getElementById('cc-toggle-btn');
+  const open = f.classList.toggle('open');
+  b.textContent = open ? '✕ Cancel' : '+ Add Charge';
+}
+
+function addCharge() {
+  const name = document.getElementById('cc-new-name').value.trim();
+  const amt  = Number(document.getElementById('cc-new-amt').value);
+  const pi   = Number(document.getElementById('cc-new-pc').value);
+  if(!name || !amt) return;
+  ccCharges.push({id:nextId++, name, amount:amt, pcIndex:pi, paid:false});
+  document.getElementById('cc-new-name').value='';
+  document.getElementById('cc-new-amt').value='';
+  save(); renderCC();
+}
+
+function togglePaid(id) {
+  const c = ccCharges.find(c=>c.id===id);
+  if(c){c.paid=!c.paid; save(); renderCC();}
+}
+
+function deleteCharge(id) {
+  ccCharges = ccCharges.filter(c=>c.id!==id);
+  save(); renderCC();
+}
+
+// ── RENDER MANAGE ────────────────────────────────────────────
+function renderManage() {
+  // Fixed
+  document.getElementById('manage-fixed-rows').innerHTML = fixedExpenses.map(e=>{
+    const dot=CAT_DOT[e.category]||'amber', txt=CAT_TEXT[e.category]||'amber';
+    const due = e.frequency==='weekly'?'Weekly':ordinal(e.dayOfMonth)+' of month';
+    return `<div>
+      <div class="row"><div class="row-left"><div class="dot ${dot}"></div><div>
+        <div class="row-name">${e.name}</div>
+        <div class="row-meta">${due} · <span class="${txt}">${e.category}</span></div>
+      </div></div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div class="row-amount">${fmt(e.amount)}</div>
+        <button class="btn-edit" onclick="toggleEditFixed(${e.id})">Edit</button>
+      </div></div>
+      <div class="edit-panel" id="edit-fixed-${e.id}">
+        <div class="edit-fields">
+          <input class="edit-name" type="text" value="${e.name}" id="ef-name-${e.id}" placeholder="Name" />
+          <div class="input-wrap"><span class="input-symbol">$</span>
+            <input class="edit-small" style="width:70px" type="number" value="${e.amount}" id="ef-amt-${e.id}" />
+          </div>
+          <select class="edit-select" id="ef-freq-${e.id}">
+            <option value="weekly"${e.frequency==='weekly'?' selected':''}>Weekly</option>
+            <option value="monthly"${e.frequency==='monthly'?' selected':''}>Monthly</option>
+          </select>
+          <input class="edit-small" type="number" value="${e.dayOfMonth||''}" id="ef-day-${e.id}" placeholder="Day" min="1" max="31" />
+          <select class="edit-select" id="ef-cat-${e.id}">
+            ${['Giving','Health','Subscriptions','Savings','Bills'].map(c=>`<option${e.category===c?' selected':''}>${c}</option>`).join('')}
+          </select>
+          <button class="btn-save" onclick="saveFixed(${e.id})">Save</button>
+          <button class="btn-del" onclick="deleteFixed(${e.id})">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Savings
+  document.getElementById('manage-sav-rows').innerHTML = savingsAccounts.map(s=>`
+    <div>
+      <div class="row"><div class="row-left"><span class="emoji">${s.emoji}</span><div>
+        <div class="row-name">${s.name}</div>
+        ${s.note?`<div class="row-note">${s.note}</div>`:''}
+      </div></div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div class="row-amount">${fmt(s.defaultAmount)}/mo</div>
+        <button class="btn-edit" onclick="toggleEditSav(${s.id})">Edit</button>
+      </div></div>
+      <div class="edit-panel" id="edit-sav-${s.id}">
+        <div class="edit-fields">
+          <input class="edit-name" type="text" value="${s.name}" id="es-name-${s.id}" placeholder="Account name" />
+          <input class="edit-name" style="max-width:80px" type="text" value="${s.emoji}" id="es-emoji-${s.id}" placeholder="Emoji" />
+          <div class="input-wrap"><span class="input-symbol">$</span>
+            <input class="edit-small" style="width:70px" type="number" value="${s.defaultAmount}" id="es-amt-${s.id}" placeholder="Default/mo" />
+          </div>
+          <input class="edit-name" type="text" value="${s.note||''}" id="es-note-${s.id}" placeholder="Note (optional)" />
+          <button class="btn-save" onclick="saveSav(${s.id})">Save</button>
+          <button class="btn-del" onclick="deleteSav(${s.id})">Delete</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Variable
+  document.getElementById('manage-var-rows').innerHTML = variableExpenses.map(e=>{
+    const dot=CAT_DOT[e.category]||'amber', txt=CAT_TEXT[e.category]||'amber';
+    return `<div>
+      <div class="row"><div class="row-left"><div class="dot ${dot}"></div><div>
+        <div class="row-name">${e.name}</div>
+        <div class="row-meta"><span class="${txt}">${e.category}</span></div>
+      </div></div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div class="row-amount">${fmt(e.amount)}/mo</div>
+        <button class="btn-edit" onclick="toggleEditVar(${e.id})">Edit</button>
+      </div></div>
+      <div class="edit-panel" id="edit-var-${e.id}">
+        <div class="edit-fields">
+          <input class="edit-name" type="text" value="${e.name}" id="ev-name-${e.id}" placeholder="Name" />
+          <div class="input-wrap"><span class="input-symbol">$</span>
+            <input class="edit-small" style="width:70px" type="number" value="${e.amount}" id="ev-amt-${e.id}" />
+          </div>
+          <select class="edit-select" id="ev-cat-${e.id}">
+            ${['Essentials','Lifestyle','Health','Entertainment'].map(c=>`<option${e.category===c?' selected':''}>${c}</option>`).join('')}
+          </select>
+          <button class="btn-save" onclick="saveVar(${e.id})">Save</button>
+          <button class="btn-del" onclick="deleteVar(${e.id})">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MANAGE ACTIONS ───────────────────────────────────────────
+function toggleEditFixed(id){const p=document.getElementById('edit-fixed-'+id);p.classList.toggle('open');}
+function toggleEditSav(id){const p=document.getElementById('edit-sav-'+id);p.classList.toggle('open');}
+function toggleEditVar(id){const p=document.getElementById('edit-var-'+id);p.classList.toggle('open');}
+
+function saveFixed(id){
+  const e=fixedExpenses.find(e=>e.id===id);
+  if(!e)return;
+  e.name=document.getElementById('ef-name-'+id).value;
+  e.amount=Number(document.getElementById('ef-amt-'+id).value);
+  e.frequency=document.getElementById('ef-freq-'+id).value;
+  e.dayOfMonth=Number(document.getElementById('ef-day-'+id).value)||null;
+  e.category=document.getElementById('ef-cat-'+id).value;
+  save();renderManage();
+}
+function deleteFixed(id){fixedExpenses=fixedExpenses.filter(e=>e.id!==id);save();renderManage();}
+function addFixed(){
+  fixedExpenses.push({id:nextId++,name:'New Expense',amount:0,frequency:'monthly',dayOfMonth:1,category:'Bills'});
+  save();renderManage();
+  // Auto-open the last edit panel
+  setTimeout(()=>{const last=fixedExpenses[fixedExpenses.length-1];toggleEditFixed(last.id);},50);
+}
+
+function saveSav(id){
+  const s=savingsAccounts.find(s=>s.id===id);
+  if(!s)return;
+  s.name=document.getElementById('es-name-'+id).value;
+  s.emoji=document.getElementById('es-emoji-'+id).value||'💰';
+  s.defaultAmount=Number(document.getElementById('es-amt-'+id).value);
+  s.note=document.getElementById('es-note-'+id).value;
+  save();renderManage();
+}
+function deleteSav(id){savingsAccounts=savingsAccounts.filter(s=>s.id!==id);save();renderManage();}
+function addSavings(){
+  savingsAccounts.push({id:nextId++,name:'New Account',emoji:'💰',defaultAmount:100});
+  save();renderManage();
+  setTimeout(()=>{const last=savingsAccounts[savingsAccounts.length-1];toggleEditSav(last.id);},50);
+}
+
+function saveVar(id){
+  const e=variableExpenses.find(e=>e.id===id);
+  if(!e)return;
+  e.name=document.getElementById('ev-name-'+id).value;
+  e.amount=Number(document.getElementById('ev-amt-'+id).value);
+  e.category=document.getElementById('ev-cat-'+id).value;
+  save();renderManage();
+}
+function deleteVar(id){variableExpenses=variableExpenses.filter(e=>e.id!==id);save();renderManage();}
+function addVariable(){
+  variableExpenses.push({id:nextId++,name:'New Expense',amount:0,category:'Essentials'});
+  save();renderManage();
+  setTimeout(()=>{const last=variableExpenses[variableExpenses.length-1];toggleEditVar(last.id);},50);
+}
+
+// ── BREAKDOWN ────────────────────────────────────────────────
+function renderBreakdown(containerId, fixed, sav, vari, leftover, income){
+  const rows=[
+    {label:'Fixed Bills', amount:fixed,   bar:'slate'},
+    {label:'Savings',     amount:sav,     bar:'blue'},
+    {label:'Variable',    amount:vari,    bar:'amber'},
+    {label:'Left Over',   amount:leftover, bar:leftover>=0?'emerald':'red'},
+  ];
+  document.getElementById(containerId).innerHTML = rows.map(r=>{
+    const pct=Math.max(0,Math.min(100,(Math.abs(r.amount)/income)*100));
+    const isLeft=r.label==='Left Over';
+    return `<div class="breakdown-row">
+      <div class="breakdown-labels">
+        <span class="breakdown-label">${r.label}</span>
+        <span class="breakdown-amount ${isLeft?(leftover>=0?'green':'red'):''}">${fmt(r.amount)}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill ${r.bar}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.getElementById('paycheckInput').addEventListener('change',e=>{
+  paycheckAmount=Number(e.target.value)||0;
+  document.getElementById('monthlyLabel').textContent='= '+fmt(paycheckAmount*2)+'/mo';
+  save(); renderMonthly();
+});
+
+load();
+document.getElementById('monthlyLabel').textContent='= '+fmt(paycheckAmount*2)+'/mo';
+renderMonthly();
+</script>
+</body>
+</html>
